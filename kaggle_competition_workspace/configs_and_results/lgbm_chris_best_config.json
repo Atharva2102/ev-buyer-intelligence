@@ -1,0 +1,6 @@
+{
+  "name": "smaller_leaves",
+  "roc_auc": 0.941988058914117,
+  "best_iteration": 1465,
+  "params": "{\"min_child_samples\": 50, \"num_leaves\": 24, \"reg_alpha\": 0.1, \"reg_lambda\": 4.0}"
+}

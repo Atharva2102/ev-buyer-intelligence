@@ -1,0 +1,10 @@
+method,roc_auc,weight_xgb_tuned_5fold_pred,weight_xgb_5fold_pred,weight_logreg_5fold_pred,weight_lightgbm_5fold_pred
+weighted_average,0.9419282404750929,0.3,0.2,0.0,0.5
+weighted_average,0.9419247062685536,0.4,0.2,0.0,0.4
+weighted_average,0.9419245241702201,0.5,0.0,0.0,0.5
+weighted_average,0.9419243292554904,0.2,0.2,0.0,0.6
+weighted_average,0.9418846960558995,0.45,0.0,0.05,0.5
+weighted_average,0.9418374340982938,0.6,0.4,0.0,0.0
+weighted_average,0.9418360342018377,0.0,0.0,0.0,1.0
+weighted_average,0.9418275487080919,0.4,0.0,0.1,0.5
+weighted_average,0.9418252598797524,1.0,0.0,0.0,0.0

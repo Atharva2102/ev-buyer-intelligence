@@ -1,0 +1,6 @@
+name,roc_auc,best_iteration,params
+smaller_leaves,0.941988058914117,1465,"{""min_child_samples"": 50, ""num_leaves"": 24, ""reg_alpha"": 0.1, ""reg_lambda"": 4.0}"
+slower_more_trees,0.9419579983843476,1633,"{""learning_rate"": 0.018, ""min_child_samples"": 60, ""n_estimators"": 4500, ""num_leaves"": 31, ""reg_alpha"": 0.2, ""reg_lambda"": 5.0}"
+current_lgbm_chris,0.9419484466650748,1304,{}
+more_random,0.9419242042898442,1200,"{""colsample_bytree"": 0.75, ""min_child_samples"": 70, ""num_leaves"": 31, ""reg_alpha"": 0.2, ""reg_lambda"": 5.0, ""subsample"": 0.75}"
+more_leaves_regularized,0.9418142190973832,815,"{""min_child_samples"": 100, ""num_leaves"": 63, ""reg_alpha"": 0.5, ""reg_lambda"": 8.0}"

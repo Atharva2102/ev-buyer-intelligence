@@ -1,0 +1,6 @@
+name,roc_auc,params
+regularized,0.9416118598888215,"{""learning_rate"": 0.04, ""max_depth"": 5, ""min_child_weight"": 8, ""n_estimators"": 700, ""reg_alpha"": 0.2, ""reg_lambda"": 6.0}"
+more_random,0.9415579955079705,"{""colsample_bytree"": 0.75, ""learning_rate"": 0.045, ""max_depth"": 5, ""min_child_weight"": 5, ""n_estimators"": 700, ""reg_lambda"": 2.0, ""subsample"": 0.75}"
+shallower_more_trees,0.9415546750597501,"{""learning_rate"": 0.035, ""max_depth"": 4, ""min_child_weight"": 6, ""n_estimators"": 800, ""reg_lambda"": 3.0}"
+baseline,0.9415449392805848,{}
+deeper_lower_lr,0.9415352548985444,"{""learning_rate"": 0.035, ""max_depth"": 6, ""min_child_weight"": 8, ""n_estimators"": 800, ""reg_lambda"": 4.0}"

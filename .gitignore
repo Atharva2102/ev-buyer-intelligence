@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+
+# Frontend
+node_modules/
+.next/
+out/
+npm-debug.log*
+
+# Generated analytics artifacts
+ev_adoption_platform/warehouse/
+kaggle_competition_workspace/data/
+kaggle_competition_workspace/oof_predictions/
+kaggle_competition_workspace/submissions/
+kaggle_competition_workspace/cache/
+
+# Local tooling
+.agents/
+skills-lock.json
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Third-party design and notebook references
+ev_adoption_platform/References/
+kaggle_competition_workspace/notebooks/Chris Deotte Submissions/
