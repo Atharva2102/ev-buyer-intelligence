@@ -5,12 +5,14 @@ __pycache__/
 venv/
 .env
 .env.*
+!.env.example
 
 # Frontend
 node_modules/
 .next/
 out/
 npm-debug.log*
+cdk.out/
 
 # Generated analytics artifacts
 ev_adoption_platform/warehouse/

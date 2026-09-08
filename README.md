@@ -243,6 +243,7 @@ Invoke-RestMethod `
 .
 |-- ev_adoption_platform/
 |   |-- api/main.py                  # FastAPI service
+|   |-- cloud/                       # AWS CDK, batch image, tests, operations
 |   |-- etl/build_warehouse.py       # ingestion, validation, marts
 |   |-- frontend/
 |   |   |-- app/                     # Next.js routes and global styles
@@ -373,16 +374,16 @@ There is not yet a formal automated test suite. Production hardening should add 
 
 ## Cloud Deployment Blueprint
 
-The repository includes a concrete AWS and Snowflake mapping in [`ev_adoption_platform/infra/aws_snowflake_blueprint.md`](ev_adoption_platform/infra/aws_snowflake_blueprint.md):
+The repository includes deployable AWS CDK and container code in [`ev_adoption_platform/cloud/`](ev_adoption_platform/cloud/README.md), plus the broader AWS and Snowflake mapping in [`ev_adoption_platform/infra/aws_snowflake_blueprint.md`](ev_adoption_platform/infra/aws_snowflake_blueprint.md):
 
-1. Land immutable source files in an S3 `raw/` prefix.
-2. Trigger a scheduled Glue job, Lambda container, or ECS task through EventBridge.
+1. Validate and land immutable source files in an encrypted, versioned S3 `raw/` prefix.
+2. Trigger the containerized ECS Fargate task manually or through its disabled-by-default EventBridge rule.
 3. Normalize and validate data into staging tables or curated Parquet.
 4. Materialize analyst-facing marts in Snowflake.
 5. Publish scored profiles into a serving schema.
 6. Host FastAPI on ECS/Fargate or behind API Gateway.
 7. Deploy Next.js through Amplify, CloudFront, or Vercel.
-8. Send pipeline logs, row-count checks, and missingness alerts to CloudWatch.
+8. Send pipeline logs to CloudWatch and write timestamped success/failure manifests to S3.
 
 This separation keeps the dashboard independent from notebooks and raw files, matching the ownership boundaries of a production data product.
 
@@ -413,6 +414,7 @@ This separation keeps the dashboard independent from notebooks and raw files, ma
 
 - [Application architecture and local workflow](ev_adoption_platform/README.md)
 - [AWS and Snowflake blueprint](ev_adoption_platform/infra/aws_snowflake_blueprint.md)
+- [Deployable cloud pipeline](ev_adoption_platform/cloud/README.md)
 - [Snowflake mart definitions](ev_adoption_platform/sql/snowflake_marts.sql)
 - [Full modeling write-up](kaggle_competition_workspace/docs/project_writeup.md)
 - [Kaggle workspace guide](kaggle_competition_workspace/README.md)

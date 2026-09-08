@@ -1,0 +1,58 @@
+name: Cloud Pipeline CI
+
+on:
+  push:
+    paths:
+      - "ev_adoption_platform/cloud/**"
+      - "ev_adoption_platform/etl/**"
+      - ".github/workflows/cloud-pipeline-ci.yml"
+  pull_request:
+    paths:
+      - "ev_adoption_platform/cloud/**"
+      - "ev_adoption_platform/etl/**"
+      - ".github/workflows/cloud-pipeline-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ev_adoption_platform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: ev_adoption_platform/cloud/pipeline/requirements.txt
+
+      - name: Install pipeline dependencies
+        run: pip install -r cloud/pipeline/requirements.txt
+
+      - name: Run pipeline tests
+        run: python -m unittest discover -s cloud/tests -v
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ev_adoption_platform/cloud/iac/package-lock.json
+
+      - name: Install infrastructure dependencies
+        working-directory: ev_adoption_platform/cloud/iac
+        run: npm ci
+
+      - name: Compile infrastructure
+        working-directory: ev_adoption_platform/cloud/iac
+        run: npm run build
+
+      - name: Synthesize CloudFormation
+        working-directory: ev_adoption_platform/cloud/iac
+        run: npx cdk synth --quiet
+
+      - name: Build pipeline container
+        run: docker build -f cloud/pipeline/Dockerfile -t ev-buyer-pipeline:ci .

@@ -1,0 +1,7 @@
+frontend/
+warehouse/
+cloud/iac/
+__pycache__/
+*.pyc
+.venv/
+.git/

@@ -1,6 +1,20 @@
 # AWS and Snowflake Blueprint
 
-This project runs locally with DuckDB, but the pipeline is structured so it can be explained or extended as a cloud analytics platform.
+This project runs locally with DuckDB and includes a deployable AWS batch implementation under `cloud/`. The same container can publish curated S3 artifacts only or additionally load Snowflake.
+
+## Implemented Infrastructure
+
+The AWS CDK stack provisions:
+
+- a private, encrypted, versioned S3 data bucket;
+- an ECR repository with image scanning and lifecycle cleanup;
+- an ECS Fargate cluster and 1-vCPU/4-GB batch task;
+- an outbound-only security group and public subnets with no NAT gateway;
+- CloudWatch logs with 30-day retention;
+- a disabled-by-default EventBridge schedule;
+- least-privilege S3 access and scoped Snowflake-secret access.
+
+The runtime writes timestamped Parquet and DuckDB artifacts, a `latest/` snapshot, row counts, and success/failure manifests. See `cloud/README.md` for deployment and operations commands.
 
 ## Cloud Mapping
 

@@ -1,0 +1,9 @@
+{
+  "app": "npx tsx bin/app.ts",
+  "context": {
+    "scheduleEnabled": false,
+    "scheduleExpression": "cron(0 6 * * ? *)",
+    "enableSnowflake": false,
+    "snowflakeSecretArn": ""
+  }
+}
