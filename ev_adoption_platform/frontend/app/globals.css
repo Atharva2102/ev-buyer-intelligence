@@ -165,6 +165,7 @@ button { color: inherit; }
 .page-content { max-width: 1660px; margin: auto; padding: clamp(1.15rem, 2vw, 2rem) clamp(1rem, 2.4vw, 2.5rem) 4rem; }
 .page-stack { display: grid; gap: clamp(1.4rem, 2.5vw, 2.4rem); }
 .page-guide { position: relative; padding: 1.15rem 0 1.3rem; display: grid; grid-template-columns: 42px minmax(230px,.8fr) minmax(260px,1fr) minmax(260px,1fr); align-items: start; gap: clamp(1rem, 2vw, 2rem); border-block: 1px solid var(--line-soft); overflow: hidden; }
+.app-stage, .page-content, .page-stack, .page-guide, .page-guide > *, .guide-read { min-width: 0; max-width: 100%; }
 .page-guide::after { content: ""; position: absolute; left: 0; bottom: -1px; width: 24%; height: 1px; background: var(--accent); animation: guide-scan 5s ease-in-out infinite alternate; }
 .guide-icon { width: 34px; height: 34px; display: grid; place-items: center; color: var(--accent); background: var(--accent-soft); border-radius: var(--radius-control); }
 .guide-icon svg { width: 17px; }
@@ -499,6 +500,7 @@ button.vehicle-card { cursor: pointer; width: 100%; }
 }
 
 @media (max-width: 600px) {
+  body { overflow-x: hidden; }
   .page-content { padding-inline: .75rem; }
   .page-heading h1 { font-size: 1.08rem; }
   .metrics-grid, .ops-strip, .health-grid, .vehicle-grid, .profile-grid, .scenario-grid { grid-template-columns: 1fr; }
@@ -509,6 +511,7 @@ button.vehicle-card { cursor: pointer; width: 100%; }
   .metric-tile { min-height: 145px; }
   .page-guide { grid-template-columns: 34px 1fr; gap: .8rem; }
   .page-guide > p, .guide-read { grid-column: 1 / -1; }
+  .page-guide p { width: 100%; overflow-wrap: anywhere; }
   .guide-read { padding: .8rem 0 0; border-left: 0; border-top: 1px solid var(--line-soft); }
   .stream-console { grid-template-columns: 1fr; }
   .stream-toggle { width: 100%; justify-content: center; }
