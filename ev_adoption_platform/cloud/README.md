@@ -1,17 +1,74 @@
-# Cloud Data Pipeline
+# Cloud Data Pipeline and Serving API
 
 This directory contains a deployable AWS batch pipeline with optional Snowflake loading. The recurring schedule is disabled by default so synthesizing or deploying the stack does not immediately start billable Fargate runs.
 
 ## Components
 
-- `iac/`: AWS CDK stack for S3, ECR, ECS Fargate, EventBridge, IAM, VPC, and CloudWatch.
+- `iac/`: AWS CDK stack for S3, ECR, ECS Fargate, DynamoDB, EventBridge, IAM, VPC, and CloudWatch.
 - `pipeline/`: non-root Python container that builds Parquet marts and a portable DuckDB warehouse.
 - `scripts/upload_inputs.py`: validates local source schemas and uploads canonical objects to S3.
 - `tests/`: transformation and contract tests.
+- `../api/Dockerfile.lambda`: production FastAPI image used by AWS Lambda.
+- `../api/Dockerfile`: optional App Runner image retained for future use.
 
 ## Provision AWS Resources
 
 Prerequisites: Node.js 20+, Docker, AWS CLI v2, and AWS credentials with CDK deployment permissions.
+
+For a standalone AWS Free plan account, do not enable AWS Organizations merely to use IAM Identity Center: organization creation upgrades the account plan. Use an MFA-protected deployment role instead:
+
+1. In AWS Budgets, create a `$20` monthly budget with actual and forecast notifications.
+2. Create `ev-platform-bootstrap` as an IAM user with no console password.
+3. Assign a virtual MFA device named `ev-platform-bootstrap` and create one access key.
+4. Create `EVPlatformDeploymentRole`, temporarily attach `AdministratorAccess`, and trust only the bootstrap user when `aws:MultiFactorAuthPresent` is `true`.
+5. Give the bootstrap user only `sts:AssumeRole` access to `arn:aws:iam::<account-id>:role/EVPlatformDeploymentRole`.
+
+Use this role trust policy, replacing `<account-id>`:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::<account-id>:user/ev-platform-bootstrap"
+      },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "Bool": {
+          "aws:MultiFactorAuthPresent": "true"
+        }
+      }
+    }
+  ]
+}
+```
+
+Attach only this inline policy to the bootstrap user, again replacing `<account-id>`:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::<account-id>:role/EVPlatformDeploymentRole"
+    }
+  ]
+}
+```
+
+Configure the source credentials locally; never paste or commit them:
+
+```powershell
+aws configure --profile ev-bootstrap
+./cloud/scripts/configure_role_profile.ps1
+aws sts get-caller-identity --profile ev-deploy
+```
+
+After the first deployment, replace `AdministratorAccess` with a least-privilege deployment policy based on the resources used, and delete or rotate the bootstrap access key.
 
 ```powershell
 cd ev_adoption_platform\cloud\iac
@@ -23,6 +80,22 @@ npm run deploy
 ```
 
 Record the stack outputs. They include the data bucket, ECR URI, ECS cluster, task definition, public subnets, and security group.
+
+## Automated First Deployment
+
+After the `ev-deploy` profile works, the deployment script synthesizes and deploys with scheduling and Snowflake disabled, builds and pushes the image, uploads validated inputs, runs one task, and verifies the latest S3 manifest. CDK bootstrap is a one-time operation; add `-Bootstrap` only for a new account and Region:
+
+```powershell
+cd ev_adoption_platform
+./cloud/scripts/deploy_pipeline.ps1
+./cloud/scripts/deploy_pipeline.ps1 -Bootstrap  # first deployment only
+```
+
+The retained score-file default is `submission_chris_lgbm_tuned_blend.csv`. Override it when the stronger TabM file is available:
+
+```powershell
+./cloud/scripts/deploy_pipeline.ps1 -ScoresPath C:\path\to\submission_tabm_colab.csv
+```
 
 ## Upload Inputs
 
@@ -39,6 +112,52 @@ python cloud\scripts\upload_inputs.py `
 ```
 
 The uploader writes `raw/train.csv`, `raw/test.csv`, `raw/original_ev_adoption.csv`, and `raw/scores.csv`, each with a SHA-256 metadata value.
+
+The container is pinned to Debian Bookworm, installs available OS security updates at build time, runs as UID `10001`, and is scanned when pushed to ECR. Review unresolved upstream findings in ECR before treating an image as production-ready.
+
+## Scoring Event Store
+
+The stack provisions an on-demand DynamoDB table with a 30-day TTL for simulator and explicitly labeled demo-stream events. The API defaults to local SQLite; start it against DynamoDB with an MFA-backed temporary session:
+
+```powershell
+cd ev_adoption_platform
+./cloud/scripts/start_api_aws.ps1
+```
+
+`/scoring-operations` aggregates stored events into request rate, latency, success, source, and adoption-band metrics. `/demo-score` samples a synthetic profile and labels the event `demo_stream`; `/predict` records user-triggered simulator activity.
+
+## Deploy the Public API
+
+The verified production path packages FastAPI as a Lambda container, adapts
+ASGI requests with Mangum, and exposes a public Function URL. The function uses
+IAM roles rather than embedded credentials, reads only the latest DuckDB object
+from S3, and writes scoring events to DynamoDB:
+
+```powershell
+cd ev_adoption_platform
+.\cloud\scripts\deploy_api_lambda.ps1
+```
+
+The function uses 2 GB of memory and a 90-second timeout. At cold start it
+downloads `curated/latest/ev_adoption.duckdb` into `/tmp`, loads the LightGBM
+serving artifact, and initializes the DynamoDB event store. The account-level
+Lambda concurrency quota bounds concurrent executions.
+
+To add the final frontend domain to CORS:
+
+```powershell
+.\cloud\scripts\deploy_api_lambda.ps1 `
+  -FrontendOrigins "https://evbuyerintelligence.dev,https://atharva2102.github.io"
+```
+
+Successful deployment prints `ApiLambdaUrl`. Save that value as the GitHub
+repository variable `NEXT_PUBLIC_API_BASE` before running the Pages workflow.
+Do not enable the batch schedule as part of API deployment.
+
+`deploy_api.ps1` retains the original App Runner deployment path. It is disabled
+in the verified stack because App Runner service creation failed for this new
+AWS account even when tested with AWS's own hello image. Lambda provides the
+same public API contract with usage-based billing and no idle instance.
 
 ## Build and Push the Container
 

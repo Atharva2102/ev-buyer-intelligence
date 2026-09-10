@@ -1,0 +1,21 @@
+FROM public.ecr.aws/lambda/python:3.12
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    WAREHOUSE_PATH=/tmp/ev_adoption.duckdb \
+    MODEL_DIR=/var/task/models
+
+RUN dnf update -y \
+    && dnf install -y libgomp \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf
+
+COPY requirements.txt ${LAMBDA_TASK_ROOT}/requirements.txt
+RUN python -m pip install --upgrade pip \
+    && python -m pip install -r ${LAMBDA_TASK_ROOT}/requirements.txt "mangum>=0.19,<1"
+
+COPY api ${LAMBDA_TASK_ROOT}/api
+COPY etl ${LAMBDA_TASK_ROOT}/etl
+COPY models ${LAMBDA_TASK_ROOT}/models
+
+CMD ["api.lambda_handler.handler"]

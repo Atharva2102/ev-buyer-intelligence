@@ -6,12 +6,13 @@ import { DashboardView } from "./dashboard-pages";
 import {
   CustomerScore,
   DriftMetric,
-  LiveFeed,
   OverviewMetric,
   PolicyScenario,
   QualityMetric,
+  ScoringOperations,
   SegmentMetric,
-  getJson
+  getJson,
+  postJson
 } from "../lib/api";
 
 export default function Dashboard({ page = "overview" }: { page?: PageKey }) {
@@ -22,7 +23,8 @@ export default function Dashboard({ page = "overview" }: { page?: PageKey }) {
   const [scenarios, setScenarios] = useState<PolicyScenario[]>([]);
   const [drift, setDrift] = useState<DriftMetric[]>([]);
   const [quality, setQuality] = useState<QualityMetric[]>([]);
-  const [live, setLive] = useState<LiveFeed | null>(null);
+  const [operations, setOperations] = useState<ScoringOperations | null>(null);
+  const [demoEnabled, setDemoEnabled] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeSegment, setActiveSegment] = useState("buyer_segment");
@@ -53,20 +55,39 @@ export default function Dashboard({ page = "overview" }: { page?: PageKey }) {
     }
   }
 
-  async function loadLiveFeed() {
+  async function loadOperations() {
     try {
-      setLive(await getJson<LiveFeed>("/live-feed?limit=8"));
+      setOperations(await getJson<ScoringOperations>("/scoring-operations?limit=12&window_minutes=60"));
     } catch {
-      setLive(null);
+      setOperations(null);
     }
   }
 
   useEffect(() => {
     loadStaticData();
-    loadLiveFeed();
-    const timer = window.setInterval(loadLiveFeed, 5000);
+    loadOperations();
+    const timer = window.setInterval(loadOperations, 5000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!demoEnabled) return;
+    let active = true;
+    async function emitDemoEvent() {
+      try {
+        await postJson("/demo-score", {});
+        if (active) await loadOperations();
+      } catch {
+        if (active) setDemoEnabled(false);
+      }
+    }
+    emitDemoEvent();
+    const timer = window.setInterval(emitDemoEvent, 2500);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [demoEnabled]);
 
   const metricMap = useMemo(
     () => Object.fromEntries(overview.map((item) => [item.metric_name, item])),
@@ -76,7 +97,7 @@ export default function Dashboard({ page = "overview" }: { page?: PageKey }) {
   function refresh() {
     setLoading(true);
     loadStaticData();
-    loadLiveFeed();
+    loadOperations();
   }
 
   function changeSegment(value: string) {
@@ -96,7 +117,8 @@ export default function Dashboard({ page = "overview" }: { page?: PageKey }) {
         page={page}
         loading={loading}
         metricMap={metricMap}
-        live={live}
+        operations={operations}
+        demoEnabled={demoEnabled}
         segments={segments}
         carSegments={carSegments}
         customers={customers}
@@ -105,6 +127,7 @@ export default function Dashboard({ page = "overview" }: { page?: PageKey }) {
         quality={quality}
         activeSegment={activeSegment}
         onSegmentChange={changeSegment}
+        onDemoToggle={() => setDemoEnabled((enabled) => !enabled)}
       />
     </AppShell>
   );

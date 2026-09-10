@@ -41,6 +41,7 @@ EV Buyer Intelligence is designed as an internal growth and strategy workspace f
 - Estimates directional lift from subsidy, charging-access, and range-anxiety interventions.
 - Monitors missingness, row counts, uniqueness, and feature coverage across pipeline layers.
 - Provides an interactive, explainable profile simulator for scenario exploration.
+- Records simulator inference events and optional labeled demo traffic for operational monitoring.
 - Presents the work through a custom responsive interface rather than a notebook-only or Streamlit demonstration.
 
 ## Key Results
@@ -78,7 +79,8 @@ flowchart LR
     D --> F[CSV marts]
     E --> G[FastAPI service]
     G --> H[Next.js dashboard]
-    H --> I[Analyst workflows]
+    G --> I[(SQLite or DynamoDB events)]
+    H --> J[Analyst workflows]
 ```
 
 The local implementation mirrors a production analytics stack while remaining inexpensive and reproducible:
@@ -88,9 +90,10 @@ The local implementation mirrors a production analytics stack while remaining in
 | Raw | CSV files | Amazon S3 raw zone |
 | Transformation | Pandas ETL | AWS Glue, ECS task, or dbt |
 | Warehouse | DuckDB | Snowflake staging and mart schemas |
-| Serving | FastAPI | ECS/Fargate or Lambda and API Gateway |
+| Serving | FastAPI | Lambda container and Function URL |
 | Product | Next.js | Vercel or AWS Amplify/CloudFront |
-| Observability | Console validation output | CloudWatch and warehouse monitoring |
+| Operational events | SQLite | DynamoDB on-demand table |
+| Observability | API operations metrics | CloudWatch and DynamoDB monitoring |
 
 ## Application Pages
 
@@ -98,7 +101,7 @@ The local implementation mirrors a production analytics stack while remaining in
 |---|---|
 | `/home` | Cinematic product landing page and platform workflow overview |
 | `/` | Executive adoption command center with KPIs, policy opportunities, and vehicle-class signals |
-| `/live-scoring` | Operational view of scored profiles, batch composition, refresh cadence, and intent bands |
+| `/live-scoring` | Recorded inference requests, latency, failures, event provenance, and prediction mix |
 | `/segments` | Segment ranking by buyer profile, city/charging context, subsidy/anxiety context, or vehicle type |
 | `/market-dna` | Original-versus-current population drift and plain-language findings |
 | `/simulator` | Interactive profile scoring and intervention comparison |
@@ -194,7 +197,9 @@ The archived workspace documents a deliberately iterative modeling process:
 
 All central comparisons use `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` and ROC AUC on competition OOF rows. Original reference rows never enter competition validation folds.
 
-The dashboard consumes saved model probabilities instead of retraining at request time. The `/predict` simulator is intentionally a transparent logistic scenario formula for interactive product exploration. It is not the serialized TabM competition model and should not be interpreted as production underwriting or individual-level advice.
+The warehouse dashboard consumes the saved TabM submission probabilities. Interactive `/predict` requests use a separately trained native-categorical LightGBM serving artifact. The artifact is trained by `python ml/train_serving_model.py`, stored under `ev_adoption_platform/models/`, and loaded once when FastAPI starts. Its fixed holdout AUC is recorded in model metadata; it is not the TabM competition ensemble and should not be interpreted as production underwriting or individual-level advice.
+
+Each interactive score is written as a timestamped event. Local development uses SQLite at `warehouse/scoring_events.sqlite3`; setting `SCORING_EVENTS_TABLE` switches the same API contract to DynamoDB. The optional demo stream samples competition profiles and is explicitly labeled `demo_stream`, so synthetic activity cannot be confused with organic usage.
 
 ## API Reference
 
@@ -209,8 +214,10 @@ Start FastAPI and open `http://127.0.0.1:8000/docs` for the interactive OpenAPI 
 | `GET` | `/data-quality?dataset=competition_train` | Column-level quality metrics |
 | `GET` | `/drift` | Original-versus-competition feature drift |
 | `GET` | `/policy-simulation` | Directional intervention scenarios |
-| `GET` | `/live-feed?limit=8` | Rotating slice of previously scored profiles |
-| `POST` | `/predict` | Explainable interactive profile simulation |
+| `GET` | `/scoring-operations?limit=12&window_minutes=60` | Request volume, latency, failures, bands, sources, and recent events |
+| `GET` | `/live-feed?limit=8` | Compatibility view backed by recorded events |
+| `POST` | `/predict` | Score a submitted profile and record a simulator event |
+| `POST` | `/demo-score` | Score one sampled synthetic profile and record a labeled demo event |
 
 Example simulator request:
 
@@ -223,6 +230,7 @@ $body = @{
   charging_stations_near_home = 3
   charging_stations_near_work = 4
   environmental_concern_level = 7
+  gender = "Other"
   city_type = "Urban"
   current_car_type = "Sedan"
   home_charging_possible = "Yes"
@@ -242,9 +250,11 @@ Invoke-RestMethod `
 ```text
 .
 |-- ev_adoption_platform/
-|   |-- api/main.py                  # FastAPI service
+|   |-- api/                         # FastAPI service, serving model, event stores
 |   |-- cloud/                       # AWS CDK, batch image, tests, operations
 |   |-- etl/build_warehouse.py       # ingestion, validation, marts
+|   |-- ml/train_serving_model.py    # train the interactive LightGBM artifact
+|   |-- models/                      # serialized serving model and metadata
 |   |-- frontend/
 |   |   |-- app/                     # Next.js routes and global styles
 |   |   |-- components/              # shell, views, and visual components
@@ -370,19 +380,33 @@ Recommended checks after changing data or models:
 - Test all routes at desktop and mobile widths.
 - Exercise simulator submission, segment switching, refresh controls, keyboard focus, and reduced-motion mode.
 
-There is not yet a formal automated test suite. Production hardening should add pytest coverage for ETL contracts and API responses plus browser tests for route rendering and interactions.
+The repository includes pipeline and event-store unit tests. Production hardening should expand API contract coverage and add browser interaction tests to CI.
 
-## Cloud Deployment Blueprint
+## Cloud Deployment
 
-The repository includes deployable AWS CDK and container code in [`ev_adoption_platform/cloud/`](ev_adoption_platform/cloud/README.md), plus the broader AWS and Snowflake mapping in [`ev_adoption_platform/infra/aws_snowflake_blueprint.md`](ev_adoption_platform/infra/aws_snowflake_blueprint.md):
+The AWS batch layer is deployed and verified in `us-east-1`. Its implementation lives in [`ev_adoption_platform/cloud/`](ev_adoption_platform/cloud/README.md), with the broader AWS and Snowflake mapping in [`ev_adoption_platform/infra/aws_snowflake_blueprint.md`](ev_adoption_platform/infra/aws_snowflake_blueprint.md).
+
+The verified deployment currently:
+
+- lands checksum-tagged source data in an encrypted, versioned S3 raw zone;
+- runs the non-root ETL container as an on-demand ECS Fargate task;
+- publishes Parquet marts, DuckDB, and a run manifest to versioned and `latest` S3 prefixes;
+- sends task logs to CloudWatch and scans images in ECR;
+- stores interactive scoring events in an encrypted, pay-per-request DynamoDB table with a 30-day TTL;
+- serves FastAPI and the LightGBM artifact from a Python 3.12 Lambda container with a public Function URL;
+- downloads the latest DuckDB warehouse from S3 on cold start and exposes it through the existing API contract;
+- keeps EventBridge scheduling and Snowflake loading disabled by default;
+- uses a `$20` AWS budget alert and an MFA-backed deployment profile.
+
+The complete target architecture remains:
 
 1. Validate and land immutable source files in an encrypted, versioned S3 `raw/` prefix.
 2. Trigger the containerized ECS Fargate task manually or through its disabled-by-default EventBridge rule.
 3. Normalize and validate data into staging tables or curated Parquet.
 4. Materialize analyst-facing marts in Snowflake.
 5. Publish scored profiles into a serving schema.
-6. Host FastAPI on ECS/Fargate or behind API Gateway.
-7. Deploy Next.js through Amplify, CloudFront, or Vercel.
+6. Host FastAPI in a Lambda container behind its HTTPS Function URL.
+7. Export Next.js statically and deploy the landing page and dashboard through GitHub Pages.
 8. Send pipeline logs to CloudWatch and write timestamped success/failure manifests to S3.
 
 This separation keeps the dashboard independent from notebooks and raw files, matching the ownership boundaries of a production data product.
@@ -392,19 +416,19 @@ This separation keeps the dashboard independent from notebooks and raw files, ma
 - **No manufacturer claims:** the datasets contain vehicle classes, not Tesla, Rivian, or other brands. All vehicle imagery is generated and unbranded.
 - **Historical reference, not causal evidence:** the original dataset supports drift and quality analysis. Negative augmentation experiments are retained as model-governance evidence.
 - **Directional policy estimates:** policy scenarios apply fixed log-odds adjustments to existing probabilities. They are useful for prioritization demonstrations, not causal impact estimates.
-- **Transparent simulator:** the interactive scorer is an explainable formula and not the trained TabM artifact.
-- **Operational demo feed:** `/live-feed` rotates through already scored warehouse rows every five seconds. It demonstrates serving and monitoring UX but is not Kafka, Kinesis, or true event streaming.
+- **Separate serving model:** the interactive scorer uses a serialized LightGBM artifact, not the stronger TabM competition ensemble. Its displayed factor labels are rule-based context, not SHAP explanations.
+- **Operational demo stream:** `/predict` records user-triggered events, while `/demo-score` produces explicitly labeled synthetic traffic. This is request monitoring backed by SQLite or DynamoDB, not Kafka or Kinesis streaming.
 - **Local warehouse:** DuckDB is ideal for reproducibility and portfolio review, but concurrent production workloads should use a managed warehouse or transactional serving store.
 - **Data is excluded:** Kaggle files, OOF predictions, submissions, and generated warehouse artifacts are not committed because they are large and rebuildable.
 - **No authentication:** the current API and dashboard are intended for local demonstration. A deployed version needs identity, authorization, rate limiting, and secrets management.
 
 ## Roadmap
 
-- Package and version a trained inference artifact so the simulator and batch scores share one model.
-- Add pytest schema and API contract tests.
+- Expand schema and API contract test coverage.
 - Add Playwright route and interaction tests to CI.
-- Containerize ETL, FastAPI, and Next.js services.
-- Deploy raw and curated zones to S3 and marts to Snowflake.
+- Replace temporary deployment administration with a tested least-privilege IAM policy.
+- Add API authentication and rate limiting to the deployed Lambda serving layer.
+- Load the curated AWS outputs into Snowflake marts.
 - Add scheduled scoring, model-version metadata, and pipeline run history.
 - Replace fixed policy adjustments with causal or uplift modeling where suitable data exists.
 - Add authentication and role-aware views for analysts, operators, and strategy users.

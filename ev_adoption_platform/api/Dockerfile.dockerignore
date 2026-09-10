@@ -1,0 +1,8 @@
+**
+!requirements.txt
+!api/
+!api/**
+!etl/
+!etl/**
+!models/
+!models/**

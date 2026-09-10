@@ -2,6 +2,10 @@
   "app": "npx tsx bin/app.ts",
   "context": {
     "scheduleEnabled": false,
+    "deployApiService": false,
+    "deployApiLambda": false,
+    "apiImageTag": "latest",
+    "frontendOrigins": "https://atharva2102.github.io,http://localhost:3000,http://127.0.0.1:3000",
     "scheduleExpression": "cron(0 6 * * ? *)",
     "enableSnowflake": false,
     "snowflakeSecretArn": ""

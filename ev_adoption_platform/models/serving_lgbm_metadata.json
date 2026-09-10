@@ -1,0 +1,128 @@
+{
+  "model_version": "lgbm-serving-2026-09-v1",
+  "trained_at": "2026-09-09T03:26:07.249505+00:00",
+  "training_rows": 668665,
+  "validation_auc": 0.9423588435327459,
+  "best_iteration": 856,
+  "feature_columns": [
+    "Age",
+    "Annual_Income_USD",
+    "Daily_Commute_km",
+    "Number_of_Cars_Owned",
+    "Charging_Stations_Near_Home",
+    "Charging_Stations_Near_Work",
+    "Environmental_Concern_Level",
+    "Gender",
+    "City_Type",
+    "Current_Car_Type",
+    "Home_Charging_Possible",
+    "Subsidy_Available",
+    "Range_Anxiety_Level",
+    "charging_total",
+    "charging_gap_home_minus_work",
+    "charging_per_commute_km",
+    "income_per_car",
+    "has_home_charging",
+    "has_subsidy",
+    "high_range_anxiety",
+    "city_home_charging_segment",
+    "subsidy_anxiety_segment",
+    "buyer_segment"
+  ],
+  "categorical_columns": [
+    "Gender",
+    "City_Type",
+    "Current_Car_Type",
+    "Home_Charging_Possible",
+    "Subsidy_Available",
+    "Range_Anxiety_Level",
+    "city_home_charging_segment",
+    "subsidy_anxiety_segment",
+    "buyer_segment"
+  ],
+  "categories": {
+    "Gender": [
+      "Female",
+      "Male",
+      "Other"
+    ],
+    "City_Type": [
+      "Rural",
+      "Suburban",
+      "Urban"
+    ],
+    "Current_Car_Type": [
+      "Hatchback",
+      "SUV",
+      "Sedan",
+      "Truck"
+    ],
+    "Home_Charging_Possible": [
+      "No",
+      "Yes"
+    ],
+    "Subsidy_Available": [
+      "No",
+      "Yes"
+    ],
+    "Range_Anxiety_Level": [
+      "High",
+      "Low",
+      "Medium"
+    ],
+    "city_home_charging_segment": [
+      "Rural | Home Charging: No",
+      "Rural | Home Charging: Yes",
+      "Suburban | Home Charging: No",
+      "Suburban | Home Charging: Yes",
+      "Urban | Home Charging: No",
+      "Urban | Home Charging: Yes"
+    ],
+    "subsidy_anxiety_segment": [
+      "Subsidy: No | Anxiety: High",
+      "Subsidy: No | Anxiety: Low",
+      "Subsidy: No | Anxiety: Medium",
+      "Subsidy: Yes | Anxiety: High",
+      "Subsidy: Yes | Anxiety: Low",
+      "Subsidy: Yes | Anxiety: Medium"
+    ],
+    "buyer_segment": [
+      "Rural | Hatchback | High",
+      "Rural | Hatchback | Low",
+      "Rural | Hatchback | Medium",
+      "Rural | SUV | High",
+      "Rural | SUV | Low",
+      "Rural | SUV | Medium",
+      "Rural | Sedan | High",
+      "Rural | Sedan | Low",
+      "Rural | Sedan | Medium",
+      "Rural | Truck | High",
+      "Rural | Truck | Low",
+      "Rural | Truck | Medium",
+      "Suburban | Hatchback | High",
+      "Suburban | Hatchback | Low",
+      "Suburban | Hatchback | Medium",
+      "Suburban | SUV | High",
+      "Suburban | SUV | Low",
+      "Suburban | SUV | Medium",
+      "Suburban | Sedan | High",
+      "Suburban | Sedan | Low",
+      "Suburban | Sedan | Medium",
+      "Suburban | Truck | High",
+      "Suburban | Truck | Low",
+      "Suburban | Truck | Medium",
+      "Urban | Hatchback | High",
+      "Urban | Hatchback | Low",
+      "Urban | Hatchback | Medium",
+      "Urban | SUV | High",
+      "Urban | SUV | Low",
+      "Urban | SUV | Medium",
+      "Urban | Sedan | High",
+      "Urban | Sedan | Low",
+      "Urban | Sedan | Medium",
+      "Urban | Truck | High",
+      "Urban | Truck | Low",
+      "Urban | Truck | Medium"
+    ]
+  }
+}

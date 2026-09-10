@@ -28,22 +28,22 @@ export type PageKey =
   | "data-quality";
 
 const navigation = [
-  { key: "overview", label: "Overview", href: "/", icon: Blocks },
-  { key: "live-scoring", label: "Live scoring", href: "/live-scoring", icon: Activity },
+  { key: "overview", label: "Overview", href: "/dashboard", icon: Blocks },
+  { key: "live-scoring", label: "Scoring ops", href: "/live-scoring", icon: Activity },
   { key: "segments", label: "Segments", href: "/segments", icon: UsersRound },
-  { key: "market-dna", label: "Market DNA", href: "/market-dna", icon: ChartNoAxesCombined },
+  { key: "market-dna", label: "Market comparison", href: "/market-dna", icon: ChartNoAxesCombined },
   { key: "simulator", label: "Simulator", href: "/simulator", icon: SlidersHorizontal },
-  { key: "model", label: "Model", href: "/model", icon: Gauge },
+  { key: "model", label: "Model evidence", href: "/model", icon: Gauge },
   { key: "data-quality", label: "Data quality", href: "/data-quality", icon: ShieldCheck }
 ] as const;
 
 export const pageCopy: Record<PageKey, { title: string; subtitle: string; eyebrow: string }> = {
-  overview: { title: "Adoption command center", subtitle: "Where buyer intent, market signals, and policy opportunities meet.", eyebrow: "Decision overview" },
-  "live-scoring": { title: "Scoring operations", subtitle: "A live view of incoming profiles moving through the serving layer.", eyebrow: "Operations" },
+  overview: { title: "EV adoption decision overview", subtitle: "A stakeholder summary of audience size, predicted intent, and scenarios worth investigating.", eyebrow: "Decision overview" },
+  "live-scoring": { title: "Scoring operations", subtitle: "Recorded requests, inference latency, failures, and prediction mix from the serving layer.", eyebrow: "Operations" },
   segments: { title: "Buyer segments", subtitle: "Find the audiences where EV intent is concentrated and actionable.", eyebrow: "Audience intelligence" },
-  "market-dna": { title: "Market DNA", subtitle: "See how the current scoring population differs from the historical reference.", eyebrow: "Population signals" },
+  "market-dna": { title: "Market comparison", subtitle: "See how the current scoring population differs from the original reference dataset.", eyebrow: "Population shift" },
   simulator: { title: "Adoption simulator", subtitle: "Test how access, incentives, and buyer context change purchase likelihood.", eyebrow: "Scenario lab" },
-  model: { title: "Model story", subtitle: "From an explainable baseline to the best-performing neural ensemble.", eyebrow: "ML performance" },
+  model: { title: "Model evidence", subtitle: "How the models were compared, what improved, and which artifact serves interactive scores.", eyebrow: "ML performance" },
   "data-quality": { title: "Data health", subtitle: "A focused view of warehouse readiness and the exceptions that matter.", eyebrow: "Pipeline trust" }
 };
 
@@ -82,7 +82,7 @@ export function AppShell({
         </nav>
         <div className="sidebar-foot">
           <DatabaseZap size={17} strokeWidth={1.7} />
-          <div><strong>Warehouse connected</strong><span>DuckDB serving layer</span></div>
+          <div><strong>Data systems online</strong><span>Warehouse + event store</span></div>
         </div>
       </aside>
       {mobileOpen && <button className="nav-scrim" aria-label="Close navigation" onClick={() => setMobileOpen(false)} />}
@@ -96,7 +96,7 @@ export function AppShell({
             <p>{copy.subtitle}</p>
           </div>
           <div className="header-actions">
-            <Link href="/home" className="site-link">View site</Link>
+            <Link href="/" className="site-link">View site</Link>
             <div className="system-state"><i /> Online</div>
             <button className="icon-button" onClick={onRefresh} aria-label="Refresh dashboard" title="Refresh dashboard"><RefreshCw size={17} /></button>
           </div>

@@ -58,18 +58,38 @@ export type QualityMetric = {
   unique_count: number;
 };
 
-export type LiveFeed = {
+export type ScoringEvent = {
+  event_id: string;
+  occurred_at: string;
+  source: "simulator" | "demo_stream";
+  status: "succeeded" | "failed";
+  probability: number | null;
+  adoption_band: string | null;
+  latency_ms: number;
+  model_version: string;
+  city_type: string | null;
+  current_car_type: string | null;
+  range_anxiety_level: string | null;
+  error_message: string | null;
+};
+
+export type ScoringOperations = {
   generated_at: string;
-  batch_id: string;
-  rows: Array<{
-    id: number;
-    ev_purchase_probability: number;
-    adoption_band: string;
-    City_Type: string;
-    Current_Car_Type: string;
-    Range_Anxiety_Level: string;
-    score_source: string;
-  }>;
+  window_minutes: number;
+  storage_backend: "sqlite" | "dynamodb";
+  model_version: string;
+  model_kind: "lightgbm" | "explainable_fallback";
+  total_requests: number;
+  successful_requests: number;
+  failed_requests: number;
+  success_rate: number;
+  requests_per_minute: number;
+  avg_latency_ms: number;
+  p95_latency_ms: number;
+  avg_probability: number;
+  band_distribution: Record<string, number>;
+  source_counts: Record<string, number>;
+  recent_events: ScoringEvent[];
 };
 
 export type PredictionRequest = {
@@ -80,6 +100,7 @@ export type PredictionRequest = {
   charging_stations_near_home: number;
   charging_stations_near_work: number;
   environmental_concern_level: number;
+  gender: string;
   city_type: string;
   current_car_type: string;
   home_charging_possible: string;
@@ -88,6 +109,13 @@ export type PredictionRequest = {
 };
 
 export type PredictionResult = {
+  event_id: string;
+  occurred_at: string;
+  source: string;
+  model_version: string;
+  model_kind: string;
+  latency_ms: number;
+  event_recorded: boolean;
   ev_purchase_probability: number;
   adoption_band: string;
   top_positive_factors: Array<string | null>;

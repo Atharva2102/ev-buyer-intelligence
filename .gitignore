@@ -12,7 +12,9 @@ node_modules/
 .next/
 out/
 npm-debug.log*
+*.log
 cdk.out/
+cdk.context.json
 
 # Generated analytics artifacts
 ev_adoption_platform/warehouse/
@@ -28,6 +30,8 @@ skills-lock.json
 .idea/
 .DS_Store
 Thumbs.db
+.visual-checks/
+test-results/
 
 # Third-party design and notebook references
 ev_adoption_platform/References/
